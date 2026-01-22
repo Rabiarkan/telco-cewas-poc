@@ -1,0 +1,81 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cewas_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.2
+    container_name: cewas_mlflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlruns:/mlruns
+    command: >
+      mlflow server
+      --backend-store-uri ${MLFLOW_BACKEND_STORE_URI}
+      --default-artifact-root ${MLFLOW_DEFAULT_ARTIFACT_ROOT}
+      --host 0.0.0.0
+      --port 5000
+
+  app:
+    image: python:3.11-slim
+    container_name: cewas_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    env_file:
+      - .env
+    working_dir: /work
+    volumes:
+      - ./:/work
+    command: bash -lc "pip install -r requirements.txt && tail -f /dev/null"
+
+  jupyter:
+    image: jupyter/scipy-notebook:python-3.11
+    container_name: cewas_jupyter
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    env_file:
+      - .env
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/home/jovyan/work
+      - jupyterdata:/home/jovyan
+    command: >
+      bash -lc "start-notebook.sh
+      --NotebookApp.token='${JUPYTER_TOKEN}'
+      --NotebookApp.password=''
+      --NotebookApp.allow_origin='*'
+      --NotebookApp.ip=0.0.0.0
+      --NotebookApp.port=8888
+      --NotebookApp.notebook_dir=/home/jovyan/work"
+
+volumes:
+  pgdata:
+  mlruns:
+  jupyterdata:
+
