@@ -1,0 +1,11 @@
+data/raw/
+data/processed/
+*.parquet
+.env
+__pycache__/
+.venv/
+.ipynb_checkpoints/
+mlruns/
+.DS_Store
+*.pyc
+
