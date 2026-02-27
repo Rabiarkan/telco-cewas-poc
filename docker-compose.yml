@@ -54,28 +54,23 @@ services:
     command: bash -lc "pip install -r requirements.txt && tail -f /dev/null"
 
   jupyter:
-    image: jupyter/scipy-notebook:python-3.11
+    build:
+      context: .
+      dockerfile: Dockerfile.jupyter
     container_name: cewas_jupyter
+    ports:
+      - "8888:8888"
+    env_file:
+      - .env
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
+    volumes:
+      - ./:/home/jovyan/work
+      - jupyterdata:/home/jovyan/.jupyter
     depends_on:
       postgres:
         condition: service_healthy
-      mlflow:
-        condition: service_started
-    env_file:
-      - .env
-    ports:
-      - "8888:8888"
-    volumes:
-      - ./:/home/jovyan/work
-      - jupyterdata:/home/jovyan
-    command: >
-      bash -lc "start-notebook.sh
-      --NotebookApp.token='${JUPYTER_TOKEN}'
-      --NotebookApp.password=''
-      --NotebookApp.allow_origin='*'
-      --NotebookApp.ip=0.0.0.0
-      --NotebookApp.port=8888
-      --NotebookApp.notebook_dir=/home/jovyan/work"
+
 
 volumes:
   pgdata:
