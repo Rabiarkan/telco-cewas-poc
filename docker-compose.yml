@@ -39,42 +39,50 @@ services:
 
 
   app:
-    image: python:3.11-slim
-    container_name: cewas_app
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mlflow:
-        condition: service_started
-    env_file:
-      - .env
-    working_dir: /work
-    volumes:
-      - ./:/work
-    command: bash -lc "pip install -r requirements.txt && tail -f /dev/null"
+      build:
+        context: .
+        dockerfile: Dockerfile.base
+      container_name: cewas_app
+      env_file:
+        - .env
+      volumes:
+        - ./:/home/jovyan/work
+      depends_on:
+        postgres:
+          condition: service_healthy
+        mlflow:
+          condition: service_started
+      command: >
+        bash -lc "tail -f /dev/null"
+      tty: true
 
   jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile.jupyter
-    container_name: cewas_jupyter
-    ports:
-      - "8888:8888"
-    env_file:
-      - .env
-    environment:
-      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
-    volumes:
-      - ./:/home/jovyan/work
-      - jupyterdata:/home/jovyan/.jupyter
-    depends_on:
-      postgres:
-        condition: service_healthy
+      build:
+        context: .
+        dockerfile: Dockerfile.base
+      container_name: cewas_jupyter
+      env_file:
+        - .env
+      ports:
+        - "8888:8888"
+      volumes:
+        - ./:/home/jovyan/work
+        - jupyterdata:/home/jovyan
+      depends_on:
+        postgres:
+          condition: service_healthy
+        mlflow:
+          condition: service_started
+      command: >
+        bash -lc "start-notebook.sh
+                  --NotebookApp.token=${JUPYTER_TOKEN}
+                  --NotebookApp.ip=0.0.0.0
+                  --NotebookApp.port=8888
+                  --NotebookApp.notebook_dir=/home/jovyan/work"
 
 
 volumes:
   pgdata:
   mlruns:
   jupyterdata:
-
 
