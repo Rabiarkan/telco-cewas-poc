@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 def get_engine():
     user = os.getenv("POSTGRES_USER", "cewas")

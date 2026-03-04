@@ -1,3 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS mlflow;
+
 CREATE SCHEMA IF NOT EXISTS dw;
 
 DROP TABLE IF EXISTS dw.fact_customer_churn;

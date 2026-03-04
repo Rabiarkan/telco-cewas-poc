@@ -1,4 +1,9 @@
 services:
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # POSTGRES — Data Warehouse + Feature Store
+  # Schemas: dw (star schema), fs (feature store + scores)
+  # ──────────────────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16
     container_name: cewas_postgres
@@ -10,12 +15,21 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Automatically run DDL when the container starts
+      - ./sql/001_create_tables.sql:/docker-entrypoint-initdb.d/001_create_tables.sql
+      - ./sql/002_create_feature_store.sql:/docker-entrypoint-initdb.d/002_create_feature_store.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 20
 
+  # ──────────────────────────────────────────────────────────────────────────
+  # MLFLOW — Experiment Tracking & Model Registry
+  # Backend: PostgreSQL (cewas_dw > mlflow schema)
+  # Artifact root: Docker volume (mlruns)
+  # UI: http://localhost:5000
+  # ──────────────────────────────────────────────────────────────────────────
   mlflow:
     build:
       context: .
@@ -36,50 +50,62 @@ services:
       --default-artifact-root ${MLFLOW_DEFAULT_ARTIFACT_ROOT}
       --host 0.0.0.0
       --port 5000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-
+  # ──────────────────────────────────────────────────────────────────────────
+  # APP — Pipeline Runner
+  # ──────────────────────────────────────────────────────────────────────────
   app:
-      build:
-        context: .
-        dockerfile: Dockerfile.base
-      container_name: cewas_app
-      env_file:
-        - .env
-      volumes:
-        - ./:/home/jovyan/work
-      depends_on:
-        postgres:
-          condition: service_healthy
-        mlflow:
-          condition: service_started
-      command: >
-        bash -lc "tail -f /dev/null"
-      tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    container_name: cewas_app
+    env_file:
+      - .env
+    volumes:
+      - ./:/home/jovyan/work
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    command: >
+      bash -lc "tail -f /dev/null"
+    tty: true
 
+  # ──────────────────────────────────────────────────────────────────────────
+  # JUPYTER — Exploration & Notebook
+  # Modeling notebook: notebooks/modeling.ipynb
+  # UI: http://localhost:8888  (token: .envdeki JUPYTER_TOKEN)
+  # ──────────────────────────────────────────────────────────────────────────
   jupyter:
-      build:
-        context: .
-        dockerfile: Dockerfile.base
-      container_name: cewas_jupyter
-      env_file:
-        - .env
-      ports:
-        - "8888:8888"
-      volumes:
-        - ./:/home/jovyan/work
-        - jupyterdata:/home/jovyan
-      depends_on:
-        postgres:
-          condition: service_healthy
-        mlflow:
-          condition: service_started
-      command: >
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    container_name: cewas_jupyter
+    env_file:
+      - .env
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/home/jovyan/work
+      - jupyterdata:/home/jovyan
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    command: >
         bash -lc "start-notebook.sh
                   --NotebookApp.token=${JUPYTER_TOKEN}
                   --NotebookApp.ip=0.0.0.0
                   --NotebookApp.port=8888
                   --NotebookApp.notebook_dir=/home/jovyan/work"
-
+                  
 
 volumes:
   pgdata:

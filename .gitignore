@@ -2,11 +2,14 @@ data/processed/
 *.parquet
 .env
 __pycache__/
+*__pycache
 .venv/
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 mlruns/
 .DS_Store
 *.pyc
 
 notebooks/
 
+todo.md
