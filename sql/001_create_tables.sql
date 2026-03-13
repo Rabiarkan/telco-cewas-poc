@@ -68,8 +68,8 @@ CREATE TABLE dw.fact_customer_churn (
   tenure              INT,
   monthly_charges     DOUBLE PRECISION,
   total_charges       DOUBLE PRECISION,
-  churn               INT               -- Yes/No -> 1/0
-);
+  churn               SMALLINT CHECK (churn IN (0,1))               -- Yes/No -> 1/0
+); -- audit columns not necessary for this POC
 
 CREATE INDEX IF NOT EXISTS ix_dim_contract_nk
   ON dw.dim_contract (contract, paperless_billing);

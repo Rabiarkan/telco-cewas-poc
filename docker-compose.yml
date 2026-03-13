@@ -37,7 +37,7 @@ services:
     container_name: cewas_mlflow
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - .env
     ports:
@@ -66,7 +66,7 @@ services:
       - ./:/home/jovyan/work
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       mlflow:
         condition: service_started
     command: bash /home/jovyan/work/scripts/entrypoint.sh
@@ -91,7 +91,7 @@ services:
       - jupyterdata:/home/jovyan
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       mlflow:
         condition: service_started
     command: >

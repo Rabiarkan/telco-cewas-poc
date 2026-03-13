@@ -1,5 +1,6 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+
 
 def get_engine():
     user = os.getenv("POSTGRES_USER", "cewas")
@@ -12,12 +13,11 @@ def get_engine():
     uri = f"postgresql+psycopg2://{user}:{pwd}@{host}:{port}/{db}"
     return create_engine(uri, future=True, pool_pre_ping=True)
 
-def run_sql_file(engine, path: str):
+
+def run_sql_file(engine, path: str) -> None:
     with open(path, "r", encoding="utf-8") as f:
         sql = f.read()
 
-    statements = [s.strip() for s in sql.split(";") if s.strip()]
-
     with engine.begin() as conn:
-        for stmt in statements:
-            conn.exec_driver_sql(stmt)
+        conn.exec_driver_sql(sql)
+
