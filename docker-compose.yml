@@ -52,6 +52,7 @@ services:
       --port 5000
 
 
+
   # ──────────────────────────────────────────────────────────────────────────
   # APP — Pipeline Runner
   # ──────────────────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ services:
       mlflow:
         condition: service_started
     command: bash /home/jovyan/work/scripts/entrypoint.sh
-    restart: on-failure
+    restart: "no"
 
   # ──────────────────────────────────────────────────────────────────────────
   # JUPYTER — Exploration & Notebook
@@ -94,12 +95,15 @@ services:
         condition: service_healthy
       mlflow:
         condition: service_started
-    command: >
-        bash -lc "start-notebook.sh
-                  --NotebookApp.token=${JUPYTER_TOKEN}
-                  --NotebookApp.ip=0.0.0.0
-                  --NotebookApp.port=8888
-                  --NotebookApp.notebook_dir=/home/jovyan/work"
+    command:
+      - bash
+      - -lc
+      - |
+        start-notebook.sh
+        --NotebookApp.token=${JUPYTER_TOKEN}
+        --NotebookApp.ip=0.0.0.0
+        --NotebookApp.port=8888
+        --NotebookApp.notebook_dir=/home/jovyan/work
                   
 
 volumes:

@@ -7,7 +7,7 @@ CREATE TABLE fs.customer_features_snapshot (
   customer_id TEXT NOT NULL,
 
   -- label
-  churn INT,
+  churn INT CHECK (churn IN (0, 1)),
 
   -- numeric features
   tenure INT,

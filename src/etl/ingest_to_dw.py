@@ -24,6 +24,11 @@ def main():
 
     # Clean / Cast
     df["TotalCharges"] = clean_total_charges(df["TotalCharges"])
+
+    df.loc[df["tenure"] == 0, "TotalCharges"] = 0
+    df["TotalCharges"] = df["TotalCharges"].fillna(df["MonthlyCharges"] * df["tenure"])
+
+    
     df["Churn"] = (df["Churn"].astype(str).str.strip().str.lower() == "yes").astype(int)
 
     dim_customer = (
